@@ -55,7 +55,7 @@
 
     // Función para mostrar el mensaje de advertencia si no es el 20 de abril a la 1 de la tarde
     function showWarningMessage() {
-      if (getCurrentDay() !== 20 || getCurrentMonth() !== 4 || getCurrentHour() < 13) {
+      if (getCurrentHour() < 13) {
         // Si no es el 20 de abril a la 1 de la tarde
         document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
       }
@@ -82,7 +82,7 @@
     }
 
     // Llamar a las funciones al cargar la página
-    //showWarningMessage();
+    showWarningMessage();
     showCongratulationsCard();
   </script>
 </body>
