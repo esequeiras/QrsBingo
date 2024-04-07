@@ -68,3 +68,13 @@ body {
   .confeti-piece:nth-child(4n) {
     background-color: #27ae60; /* Cuarto color del confeti */
   }
+  .warning-container{
+    text-align: center;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 80%;
+    max-width: 400px;
+    margin: 0 auto; /* Centrar horizontalmente */
+  }
