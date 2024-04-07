@@ -11,32 +11,35 @@
 
 <body>
 
+  <!-- Contenedor de la tarjeta de felicitación (inicialmente oculto) -->
+  <div class="container" style="display: none;">
+    <h1>¡Felicidades!</h1>
+    <p>Tu boleto de bingo con el ID <span id="qrId"></span> es válido.</p>
+  </div>
+
+  <!-- Contenedor de advertencia sobre el QR -->
   <div class="warning-container" style="display: none;">
     <h1>Atención</h1>
-    <p>El código QR estará disponible hasta el 20 de abril.</p>
+    <p>El código QR solo estará disponible a partir del 7 de abril a la 1 de la tarde.</p>
     <p>No compartas tu QR con nadie más, ya que podrías perder tu cartón.</p>
-  </div> 
-
-  <div style="display: none;">
-    <div class="container">
-      <h1>¡Felicidades!</h1>
-      <p>Tu boleto de bingo con el ID <span id="qrId"></span> es válido.</p>
-    </div>
-
-    <div class="confeti">
-      <!-- Puedes ajustar la cantidad y distribución de confeti aquí -->
-      <div class="confeti-piece" style="top: -10vh; left: 5vw;"></div>
-      <div class="confeti-piece" style="top: -10vh; left: 20vw;"></div>
-      <div class="confeti-piece" style="top: -10vh; left: 40vw;"></div>
-      <div class="confeti-piece" style="top: -10vh; left: 60vw;"></div>
-      <div class="confeti-piece" style="top: -10vh; left: 80vw;"></div>
-      <div class="confeti-piece" style="top: -20vh; left: 10vw;"></div>
-      <div class="confeti-piece" style="top: -20vh; left: 30vw;"></div>
-      <div class="confeti-piece" style="top: -20vh; left: 50vw;"></div>
-      <div class="confeti-piece" style="top: -20vh; left: 70vw;"></div>
-      <!-- Añade más piezas de confeti según sea necesario -->
-    </div>
   </div>
+
+  <!-- Confeti -->
+  <div class="confeti" style="display: none;">
+    <!-- Puedes ajustar la cantidad y distribución de confeti aquí -->
+    <div class="confeti-piece" style="top: -10vh; left: 5vw;"></div>
+    <div class="confeti-piece" style="top: -10vh; left: 20vw;"></div>
+    <div class="confeti-piece" style="top: -10vh; left: 40vw;"></div>
+    <div class="confeti-piece" style="top: -10vh; left: 60vw;"></div>
+    <div class="confeti-piece" style="top: -10vh; left: 80vw;"></div>
+    <div class="confeti-piece" style="top: -20vh; left: 10vw;"></div>
+    <div class="confeti-piece" style="top: -20vh; left: 30vw;"></div>
+    <div class="confeti-piece" style="top: -20vh; left: 50vw;"></div>
+    <div class="confeti-piece" style="top: -20vh; left: 70vw;"></div>
+    <!-- Añade más piezas de confeti según sea necesario -->
+  </div>
+
+
   <script>
     // Función para obtener la hora actual en formato de 24 horas (0-23)
     function getCurrentHour() {
@@ -53,25 +56,27 @@
       return new Date().getMonth() + 1; // Se suma 1 porque en JavaScript los meses van de 0 a 11
     }
 
-    // Función para mostrar el mensaje de advertencia si no es el 20 de abril a la 1 de la tarde
+    // Función para mostrar el mensaje de advertencia si es antes del 7 de abril o antes de la 1 de la tarde
     function showWarningMessage() {
-      if (getCurrentHour() < 13) {
-        // Si no es el 20 de abril a la 1 de la tarde
+      if (getCurrentDay() < 7 || (getCurrentDay() === 7 && getCurrentHour() < 13)) {
+        // Si es antes del 7 de abril o antes de la 1 de la tarde del 7 de abril
         document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
       }
     }
 
+    // Función para mostrar la tarjeta de felicitaciones si es después del 7 de abril a la 1 de la tarde
     function showCongratulationsCard() {
-      if (getCurrentDay() === 7 && getCurrentMonth() === 4 && getCurrentHour() >=13) {
-        // Si es el 20 de abril a la 1 de la tarde
+      if (getCurrentDay() >= 7 && (getCurrentDay() > 7 || getCurrentHour() >= 13)) {
+        // Si es después del 7 de abril o es después de la 1 de la tarde del 7 de abril
         const container = document.querySelector('.container');
         container.style.display = 'block'; // Mostrar la tarjeta de felicitaciones
         document.querySelector('.confeti').style.display = 'block'; // Mostrar el confeti
         incrementScanCountAndShowID(container); // Incrementar el contador de escaneos y mostrar el ID del QR
       }
     }
-     // Función para incrementar el contador de escaneos y mostrar el ID del QR en la tarjeta
-     function incrementScanCountAndShowID(container) {
+
+    // Función para incrementar el contador de escaneos y mostrar el ID del QR en la tarjeta
+    function incrementScanCountAndShowID(container) {
       let scanCount = localStorage.getItem('scanCount');
       if (!scanCount) {
         scanCount = 0;
