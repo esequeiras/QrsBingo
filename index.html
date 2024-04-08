@@ -20,7 +20,7 @@
   <!-- Contenedor de advertencia sobre el QR -->
   <div class="warning-container" style="display: none;">
     <h1>Atención</h1>
-    <p>El código QR solo estará disponible a partir del 7 de abril a la 1 de la tarde.</p>
+    <p>El código QR solo estará disponible a partir del 5 de Mayo a la 1 de la tarde.</p>
     <p>No compartas tu QR con nadie más, ya que podrías perder tu cartón.</p>
   </div>
 
@@ -41,40 +41,32 @@
 
 
   <script>
-    // Función para obtener la hora actual en formato de 24 horas (0-23)
-    function getCurrentHour() {
-      return new Date().getHours();
-    }
 
-    // Función para obtener el día actual
-    function getCurrentDay() {
-      return new Date().getDate();
-    }
 
-    // Función para obtener el mes actual
-    function getCurrentMonth() {
-      return new Date().getMonth() + 1; // Se suma 1 porque en JavaScript los meses van de 0 a 11
-    }
-
-    function getCurrentMonth() {
-      return new Date().getMonth() + 1; // Se suma 1 porque en JavaScript los meses van de 0 a 11
-    }
-
-    // Función para mostrar el mensaje de advertencia si es antes del 5 de mayo o antes de la 1 de la tarde del 5 de mayo
     function showWarningMessage() {
-      if (getCurrentMonth() <=5 && getCurrentDay() < 5) {
-        // Si es antes del 5 de mayo
+      const currentDate = new Date(); // Obtener la fecha y hora actual
+
+      // Crear una fecha para el 5 de mayo a la 1 de la tarde
+      const may5th = new Date(currentDate.getFullYear(), 4, 5, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
+
+      if (currentDate < may5th) {
+        // Si la fecha actual es antes del 5 de mayo a la 1 de la tarde
         document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
-      } else if (getCurrentMonth() === 5 && getCurrentDay() === 5 && getCurrentHour() < 13) {
-        // Si es el 5 de mayo pero antes de la 1 de la tarde
-        document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
+      } else {
+        // Si la fecha actual es el 5 de mayo o después de la 1 de la tarde, ocultar el contenedor de advertencia
+        document.querySelector('.warning-container').style.display = 'none';
       }
     }
 
     // Función para mostrar la tarjeta de felicitaciones si es después del 5 de mayo a la 1 de la tarde
     function showCongratulationsCard() {
-      if (getCurrentMonth() === 5 && getCurrentDay() === 5 && getCurrentHour() >= 13) {
-        // Si es el 5 de mayo y es después de la 1 de la tarde
+      const currentDate = new Date(); // Obtener la fecha y hora actual
+
+      // Crear una fecha para el 5 de mayo a la 1 de la tarde
+      const may5th = new Date(currentDate.getFullYear(), 4, 5, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
+
+      if (currentDate >= may5th) {
+        // Si la fecha actual es el 5 de mayo o después de la 1 de la tarde
         const container = document.querySelector('.container');
         container.style.display = 'block'; // Mostrar la tarjeta de felicitaciones
         document.querySelector('.confeti').style.display = 'block'; // Mostrar el confeti
