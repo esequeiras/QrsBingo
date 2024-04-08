@@ -56,25 +56,31 @@
       return new Date().getMonth() + 1; // Se suma 1 porque en JavaScript los meses van de 0 a 11
     }
 
-    // Función para mostrar el mensaje de advertencia si es antes del 7 de abril o antes de la 1 de la tarde
+    function getCurrentMonth() {
+      return new Date().getMonth() + 1; // Se suma 1 porque en JavaScript los meses van de 0 a 11
+    }
+
+    // Función para mostrar el mensaje de advertencia si es antes del 5 de mayo o antes de la 1 de la tarde del 5 de mayo
     function showWarningMessage() {
-      if (getCurrentDay() < 7 || (getCurrentDay() === 7 && getCurrentHour() < 13)) {
-        // Si es antes del 7 de abril o antes de la 1 de la tarde del 7 de abril
+      if (getCurrentMonth() <=5 && getCurrentDay() < 5) {
+        // Si es antes del 5 de mayo
+        document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
+      } else if (getCurrentMonth() === 5 && getCurrentDay() === 5 && getCurrentHour() < 13) {
+        // Si es el 5 de mayo pero antes de la 1 de la tarde
         document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
       }
     }
 
-    // Función para mostrar la tarjeta de felicitaciones si es después del 7 de abril a la 1 de la tarde
+    // Función para mostrar la tarjeta de felicitaciones si es después del 5 de mayo a la 1 de la tarde
     function showCongratulationsCard() {
-      if (getCurrentDay() >= 7 && (getCurrentDay() > 7 || getCurrentHour() >= 13)) {
-        // Si es después del 7 de abril o es después de la 1 de la tarde del 7 de abril
+      if (getCurrentMonth() === 5 && getCurrentDay() === 5 && getCurrentHour() >= 13) {
+        // Si es el 5 de mayo y es después de la 1 de la tarde
         const container = document.querySelector('.container');
         container.style.display = 'block'; // Mostrar la tarjeta de felicitaciones
         document.querySelector('.confeti').style.display = 'block'; // Mostrar el confeti
         incrementScanCountAndShowID(container); // Incrementar el contador de escaneos y mostrar el ID del QR
       }
     }
-
     // Función para incrementar el contador de escaneos y mostrar el ID del QR en la tarjeta
     function incrementScanCountAndShowID(container) {
       let scanCount = localStorage.getItem('scanCount');
