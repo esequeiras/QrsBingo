@@ -20,7 +20,7 @@
   <!-- Contenedor de advertencia sobre el QR -->
   <div class="warning-container" style="display: none;">
     <h1>Atención</h1>
-    <p>El código QR solo estará disponible a partir del 5 de Mayo a la 1 de la tarde.</p>
+    <p>El código QR solo estará disponible a partir del 6 de Octubre a la 1 de la tarde.</p>
     <p>No compartas tu QR con nadie más, ya que podrías perder tu cartón.</p>
   </div>
 
@@ -46,8 +46,8 @@
     function showWarningMessage() {
       const currentDate = new Date(); // Obtener la fecha y hora actual
 
-      // Crear una fecha para el 5 de mayo a la 1 de la tarde
-      const may5th = new Date(currentDate.getFullYear(), 4, 19, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
+      // Crear una fecha para el 6 de mayo a la 1 de la tarde
+      const may5th = new Date(currentDate.getFullYear(), 9, 6, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
 
       if (currentDate < may5th) {
         // Si la fecha actual es antes del 5 de mayo a la 1 de la tarde
@@ -63,7 +63,7 @@
       const currentDate = new Date(); // Obtener la fecha y hora actual
 
       // Crear una fecha para el 5 de mayo a la 1 de la tarde
-      const may5th = new Date(currentDate.getFullYear(), 4, 19, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
+      const may5th = new Date(currentDate.getFullYear(), 9, 6, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
 
       if (currentDate >= may5th) {
         // Si la fecha actual es el 5 de mayo o después de la 1 de la tarde
