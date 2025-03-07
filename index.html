@@ -43,36 +43,37 @@
   <script>
 
 
-    function showWarningMessage() {
-      const currentDate = new Date(); // Obtener la fecha y hora actual
+   function showWarningMessage() {
+  const currentDate = new Date(); // Obtener la fecha y hora actual
 
-      // Crear una fecha para el 6 de mayo a la 1 de la tarde
-      const may5th = new Date(currentDate.getFullYear(), 9, 6, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
+  // Crear una fecha para el 30 de marzo a la 1 de la tarde
+  const march30th = new Date(currentDate.getFullYear(), 2, 30, 13, 0, 0); // Mes 2 = marzo (los meses en JS van de 0 a 11)
 
-      if (currentDate < may5th) {
-        // Si la fecha actual es antes del 5 de mayo a la 1 de la tarde
-        document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
-      } else {
-        // Si la fecha actual es el 5 de mayo o después de la 1 de la tarde, ocultar el contenedor de advertencia
-        document.querySelector('.warning-container').style.display = 'none';
-      }
-    }
+  if (currentDate < march30th) {
+    // Si la fecha actual es antes del 30 de marzo a la 1 de la tarde
+    document.querySelector('.warning-container').style.display = 'block'; // Mostrar el mensaje de advertencia
+  } else {
+    // Si la fecha actual es el 30 de marzo a la 1 p.m. o después, ocultar el mensaje
+    document.querySelector('.warning-container').style.display = 'none';
+  }
+}
 
     // Función para mostrar la tarjeta de felicitaciones si es después del 5 de mayo a la 1 de la tarde
-    function showCongratulationsCard() {
-      const currentDate = new Date(); // Obtener la fecha y hora actual
+   function showCongratulationsCard() {
+  const currentDate = new Date(); // Obtener la fecha y hora actual
 
-      // Crear una fecha para el 5 de mayo a la 1 de la tarde
-      const may5th = new Date(currentDate.getFullYear(), 9, 6, 13, 0, 0); // El mes es 4 porque los meses en JavaScript van de 0 a 11
+  // Crear una fecha para el 30 de marzo a la 1 de la tarde
+  const march30th = new Date(currentDate.getFullYear(), 2, 30, 13, 0, 0); // Mes 2 = marzo (los meses en JS van de 0 a 11)
 
-      if (currentDate >= may5th) {
-        // Si la fecha actual es el 5 de mayo o después de la 1 de la tarde
-        const container = document.querySelector('.container');
-        container.style.display = 'block'; // Mostrar la tarjeta de felicitaciones
-        document.querySelector('.confeti').style.display = 'block'; // Mostrar el confeti
-        incrementScanCountAndShowID(container); // Incrementar el contador de escaneos y mostrar el ID del QR
-      }
-    }
+  if (currentDate >= march30th) {
+    // Si la fecha actual es el 30 de marzo a la 1 p.m. o después
+    const container = document.querySelector('.container');
+    container.style.display = 'block'; // Mostrar la tarjeta de felicitaciones
+    document.querySelector('.confeti').style.display = 'block'; // Mostrar el confeti
+    incrementScanCountAndShowID(container); // Incrementar el contador de escaneos y mostrar el ID del QR
+  }
+}
+
     // Función para incrementar el contador de escaneos y mostrar el ID del QR en la tarjeta
     function incrementScanCountAndShowID(container) {
       let scanCount = localStorage.getItem('scanCount');
