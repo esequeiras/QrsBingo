@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scanner QR - Bingo (solo cámara)</title>
+  <title>Scanner QR - Bingo</title>
   <style>
     body { font-family: Inter, Arial, sans-serif; background:#f3f6fb; color:#111; margin:0; padding:18px; }
     .wrap { max-width:900px; margin:0 auto; }
@@ -11,9 +11,10 @@
     .card { background:#fff; border-radius:10px; padding:16px; box-shadow:0 8px 24px rgba(20,30,60,0.06); }
     #reader { width:100%; max-width:640px; height:auto; margin:0 auto; }
     .controls { display:flex; gap:8px; margin-top:12px; justify-content:center; flex-wrap:wrap; }
-    button { padding:10px 14px; border-radius:8px; border:0; background:#2563eb; color:white; cursor:pointer; font-weight:600; }
+    button, select { padding:10px 14px; border-radius:8px; border:1px solid #dbeafe; background:#2563eb; color:white; cursor:pointer; font-weight:600; }
+    select { background:#fff; color:#111; border:1px solid #d1d5db; font-weight:500; }
     button.ghost { background:#eef2ff; color:#111; border:1px solid #dbeafe; }
-    .result { margin-top:16px; display:flex; gap:12px; align-items:flex-start; }
+    .result { margin-top:16px; display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
     pre { background:#0b1220; color:#e6eef8; padding:12px; border-radius:8px; overflow:auto; max-height:360px; width:100%; }
     .meta { min-width:220px; }
     small { color:#666; }
@@ -24,185 +25,83 @@
   <div class="wrap">
     <header>
       <h1>Scanner QR — Cámara</h1>
-      <p class="hint">Apunta la cámara al QR. Decodifica `data` (si viene como parámetro base64) o JSON directo.</p>
+      <p class="hint">Selecciona la cámara y escanea el QR.</p>
     </header>
 
     <div class="card">
-      <div id="reader"></div>
-
       <div class="controls">
-        <button id="startBtn">Iniciar cámara</button>
-        <button id="stopBtn" class="ghost" style="display:none">Detener cámara</button>
-        <button id="pasteBtn" class="ghost">Pegar texto/URL manual</button>
-        <button id="clearBtn" class="ghost">Limpiar resultado</button>
+        <select id="cameraSelect">
+          <option value="">Seleccionar cámara...</option>
+        </select>
+        <button id="startBtn">Iniciar</button>
+        <button id="stopBtn" class="ghost" style="display:none">Detener</button>
       </div>
 
-      <div class="result" style="margin-top:16px;">
+      <div id="reader"></div>
+
+      <div class="result">
         <div style="flex:1">
-          <h3>Salida (pretty JSON)</h3>
+          <h3>Resultado</h3>
           <pre id="output">—</pre>
         </div>
         <div class="meta card" style="padding:12px; width:260px;">
-          <h4>Acciones</h4>
+          <h4>Estado</h4>
           <small id="lastInfo">Sin escaneos aún</small>
-          <div style="margin-top:10px;">
-            <button id="copyBtn" class="ghost">Copiar resultado</button>
-            <button id="downloadBtn" class="ghost">Descargar JSON</button>
-          </div>
-          <p style="margin-top:12px;"><small>Si el QR contiene una URL con <code>?data=...</code>, se decodificará automáticamente.</small></p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- html5-qrcode -->
-  <script src="html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    // ---------- Helpers ----------
-    function base64UrlToBase64(base64url) {
-      // Reemplazar URL-safe chars y añadir padding
-      let s = base64url.replace(/-/g, '+').replace(/_/g, '/');
-      while (s.length % 4) s += '=';
-      return s;
-    }
-
-    function tryParseJSON(text) {
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function pretty(obj) {
-      try { return JSON.stringify(obj, null, 2); }
-      catch(e) { return String(obj); }
-    }
-
-    function decodeDataField(encoded) {
-      // recibe base64-url-safe. Devuelve texto decodificado o null
-      try {
-        const b64 = base64UrlToBase64(encoded);
-        // atob maneja base64 estándar
-        const decoded = atob(b64);
-        return decoded;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    // ---------- UI elements ----------
-    const output = document.getElementById('output');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const pasteBtn = document.getElementById('pasteBtn');
-    const clearBtn = document.getElementById('clearBtn');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const output = document.getElementById('output');
     const lastInfo = document.getElementById('lastInfo');
-    const readerElem = document.getElementById('reader');
 
     let html5QrCode = null;
-    let lastPayload = null;
 
-    // ---------- Scan handlers ----------
-    async function onScanSuccess(decodedText, decodedResult) {
-      // decodedText: lo que contiene el QR
-      // Lógica:
-      // 1) Si es una URL y tiene ?data=..., tomar data -> base64-url decode -> intentar JSON
-      // 2) Si es JSON -> parsear y mostrar
-      // 3) Si es base64 directo -> intentar decodificar y parsear
-      // 4) Si nada -> mostrar texto plano
-      let displayed = null;
-      let info = "";
-
-      // Detectar URL
-      try {
-        const url = new URL(decodedText);
-        // si tiene param 'data'
-        const dataParam = url.searchParams.get('data') || url.searchParams.get('d');
-        if (dataParam) {
-          const dec = decodeDataField(dataParam);
-          if (dec !== null) {
-            const asJson = tryParseJSON(dec);
-            if (asJson) {
-              displayed = asJson;
-              info = `URL con data (param): parsed JSON (${new Date().toLocaleTimeString()})`;
-            } else {
-              displayed = dec;
-              info = `URL con data (param): texto decodificado (${new Date().toLocaleTimeString()})`;
-            }
-            showResult(displayed, info, decodedText);
-            return;
-          }
-        }
-        // si la URL no tenía data, mostramos la URL como texto
-        displayed = { url: decodedText };
-        info = `URL (sin param data) - ${new Date().toLocaleTimeString()}`;
-        showResult(displayed, info, decodedText);
-        return;
-      } catch (err) {
-        // no es URL
-      }
-
-      // Intentar JSON directo
-      const maybeJson = tryParseJSON(decodedText);
-      if (maybeJson) {
-        displayed = maybeJson;
-        info = `JSON directo parseado - ${new Date().toLocaleTimeString()}`;
-        showResult(displayed, info, decodedText);
-        return;
-      }
-
-      // Intentar base64 url-safe directo
-      const decMaybe = decodeDataField(decodedText);
-      if (decMaybe !== null) {
-        const asJson = tryParseJSON(decMaybe);
-        if (asJson) {
-          displayed = asJson;
-          info = `Base64 decode -> JSON - ${new Date().toLocaleTimeString()}`;
-          showResult(displayed, info, decodedText);
-          return;
-        } else {
-          displayed = decMaybe;
-          info = `Base64 decode -> texto - ${new Date().toLocaleTimeString()}`;
-          showResult(displayed, info, decodedText);
-          return;
-        }
-      }
-
-      // Nada de lo anterior, mostrar texto plano
-      displayed = decodedText;
-      info = `Texto plano leído - ${new Date().toLocaleTimeString()}`;
-      showResult(displayed, info, decodedText);
-    }
-
-    function showResult(payload, infoText, rawDecoded) {
-      lastPayload = payload;
-      output.textContent = pretty(payload);
-      lastInfo.textContent = infoText;
-      // opcional: log raw content en consola
-      console.log("RAW QR:", rawDecoded);
-    }
-
-    // ---------- Camera control ----------
-    async function startCamera() {
-      if (html5QrCode) return;
-      html5QrCode = new Html5Qrcode("reader");
-
+    async function loadCameras() {
       try {
         const devices = await Html5Qrcode.getCameras();
-        if (!devices || devices.length === 0) {
-          alert("No se detectó cámara en este dispositivo.");
+        if (!devices.length) {
+          alert("No se encontraron cámaras.");
           return;
         }
-        const cameraId = devices[0].id;
-        await html5QrCode.start(cameraId, { fps: 10, qrbox: 300 }, onScanSuccess);
+        cameraSelect.innerHTML = "";
+        devices.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = d.label || `Cámara ${cameraSelect.length + 1}`;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {
+        alert("Error obteniendo cámaras: " + e);
+      }
+    }
+
+    async function startCamera() {
+      const cameraId = cameraSelect.value;
+      if (!cameraId) {
+        alert("Selecciona una cámara primero.");
+        return;
+      }
+      html5QrCode = new Html5Qrcode("reader");
+      try {
+        await html5QrCode.start(
+          cameraId,
+          { fps: 10, qrbox: 300 },
+          (decodedText, decodedResult) => {
+            output.textContent = decodedText;
+            lastInfo.textContent = `Escaneado a las ${new Date().toLocaleTimeString()}`;
+            console.log("QR:", decodedText);
+          }
+        );
         startBtn.style.display = "none";
         stopBtn.style.display = "inline-block";
-      } catch (e) {
-        alert("Error al iniciar la cámara: " + e);
-        html5QrCode = null;
+      } catch (err) {
+        alert("Error al iniciar cámara: " + err);
       }
     }
 
@@ -210,63 +109,17 @@
       if (!html5QrCode) return;
       try {
         await html5QrCode.stop();
-      } catch (e) { console.warn("stop error", e); }
+      } catch {}
       html5QrCode.clear();
       html5QrCode = null;
-      stopBtn.style.display = "none";
       startBtn.style.display = "inline-block";
+      stopBtn.style.display = "none";
       lastInfo.textContent = "Cámara detenida";
     }
 
-    // ---------- Buttons ----------
-    startBtn.onclick = () => startCamera();
-    stopBtn.onclick = () => stopCamera();
-    clearBtn.onclick = () => {
-      output.textContent = "—";
-      lastPayload = null;
-      lastInfo.textContent = "Limpiado";
-    };
-
-    copyBtn.onclick = async () => {
-      if (!lastPayload) return alert("No hay resultado para copiar.");
-      try {
-        await navigator.clipboard.writeText(pretty(lastPayload));
-        alert("Resultado copiado al portapapeles.");
-      } catch (e) {
-        alert("No se pudo copiar: " + e);
-      }
-    };
-
-    downloadBtn.onclick = () => {
-      if (!lastPayload) return alert("No hay resultado para descargar.");
-      const blob = new Blob([pretty(lastPayload)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `qr_payload_${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    };
-
-    pasteBtn.onclick = async () => {
-      // intenta pegar desde el portapapeles (URL / base64 / JSON)
-      try {
-        const text = await navigator.clipboard.readText();
-        if (!text) return alert("Portapapeles vacío.");
-        // simular que se escaneó ese texto
-        onScanSuccess(text, null);
-      } catch (e) {
-        alert("No se pudo leer del portapapeles: " + e);
-      }
-    };
-
-    // Iniciar automáticamente si el navegador ya tiene permisos
-    (async () => {
-      // Intenta iniciar cámara si el usuario ya dio permisos antes
-      // No forzamos para evitar prompt inesperado al cargar la página
-      // Puedes descomentar para iniciar automáticamente:
-      // await startCamera();
-    })();
+    startBtn.onclick = startCamera;
+    stopBtn.onclick = stopCamera;
+    window.onload = loadCameras;
   </script>
 </body>
 </html>
