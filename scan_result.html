@@ -113,6 +113,7 @@
 
           if (decoded) {
             output.textContent = JSON.stringify(decoded, null, 2);
+            sendToBackend(decoded);
           } else {
             output.textContent = raw;
           }
@@ -127,6 +128,32 @@
       alert("Error al iniciar cámara: " + err);
     }
   }
+async function sendToBackend(data) {
+  try {
+    const response = await fetch("https://qrsbingo.onrender.com/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (!result.ok) {
+      // Si el backend indica que es duplicado o error
+      lastInfo.textContent = `❌ ${result.message} (${new Date().toLocaleTimeString()})`;
+    } else {
+      // Si se registró correctamente
+      lastInfo.textContent = `✅ ${result.message} — Tickets: ${result.tickets} (${new Date().toLocaleTimeString()})`;
+    }
+
+    console.log("Respuesta del backend:", result);
+
+  } catch (err) {
+    lastInfo.textContent = `❌ Error al conectar con el backend: ${err.message}`;
+    console.error("Error enviando al backend:", err);
+  }
+}
+
 
   async function stopCamera() {
     if (!html5QrCode) return;
