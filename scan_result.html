@@ -54,72 +54,95 @@
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const cameraSelect = document.getElementById('cameraSelect');
-    const output = document.getElementById('output');
-    const lastInfo = document.getElementById('lastInfo');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const cameraSelect = document.getElementById('cameraSelect');
+  const output = document.getElementById('output');
+  const lastInfo = document.getElementById('lastInfo');
+  let html5QrCode = null;
 
-    let html5QrCode = null;
-
-    async function loadCameras() {
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        if (!devices.length) {
-          alert("No se encontraron cámaras.");
-          return;
-        }
-        cameraSelect.innerHTML = "";
-        devices.forEach(d => {
-          const opt = document.createElement('option');
-          opt.value = d.id;
-          opt.textContent = d.label || `Cámara ${cameraSelect.length + 1}`;
-          cameraSelect.appendChild(opt);
-        });
-      } catch (e) {
-        alert("Error obteniendo cámaras: " + e);
-      }
-    }
-
-    async function startCamera() {
-      const cameraId = cameraSelect.value;
-      if (!cameraId) {
-        alert("Selecciona una cámara primero.");
+  async function loadCameras() {
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      if (!devices.length) {
+        alert("No se encontraron cámaras.");
         return;
       }
-      html5QrCode = new Html5Qrcode("reader");
-      try {
-        await html5QrCode.start(
-          cameraId,
-          { fps: 10, qrbox: 300 },
-          (decodedText, decodedResult) => {
-            output.textContent = decodedText;
-            lastInfo.textContent = `Escaneado a las ${new Date().toLocaleTimeString()}`;
-            console.log("QR:", decodedText);
+      cameraSelect.innerHTML = "";
+      devices.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.label || `Cámara ${cameraSelect.length + 1}`;
+        cameraSelect.appendChild(opt);
+      });
+    } catch (e) {
+      alert("Error obteniendo cámaras: " + e);
+    }
+  }
+
+  function decodeQRText(decodedText) {
+    try {
+      // Extraer el valor después de ?data=
+      const match = decodedText.match(/[?&]data=([^&]+)/);
+      if (!match) return { raw: decodedText, decoded: null };
+
+      const base64data = decodeURIComponent(match[1]);
+      const jsonStr = atob(base64data.replace(/-/g, '+').replace(/_/g, '/'));
+      const obj = JSON.parse(jsonStr);
+      return { raw: decodedText, decoded: obj };
+    } catch (e) {
+      console.error("Error decodificando:", e);
+      return { raw: decodedText, decoded: null };
+    }
+  }
+
+  async function startCamera() {
+    const cameraId = cameraSelect.value;
+    if (!cameraId) {
+      alert("Selecciona una cámara primero.");
+      return;
+    }
+
+    html5QrCode = new Html5Qrcode("reader");
+    try {
+      await html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: 300 },
+        (decodedText, decodedResult) => {
+          const { raw, decoded } = decodeQRText(decodedText);
+
+          if (decoded) {
+            output.textContent = JSON.stringify(decoded, null, 2);
+          } else {
+            output.textContent = raw;
           }
-        );
-        startBtn.style.display = "none";
-        stopBtn.style.display = "inline-block";
-      } catch (err) {
-        alert("Error al iniciar cámara: " + err);
-      }
-    }
 
-    async function stopCamera() {
-      if (!html5QrCode) return;
-      try {
-        await html5QrCode.stop();
-      } catch {}
-      html5QrCode.clear();
-      html5QrCode = null;
-      startBtn.style.display = "inline-block";
-      stopBtn.style.display = "none";
-      lastInfo.textContent = "Cámara detenida";
+          lastInfo.textContent = `Escaneado a las ${new Date().toLocaleTimeString()}`;
+          console.log("QR decodificado:", decoded || raw);
+        }
+      );
+      startBtn.style.display = "none";
+      stopBtn.style.display = "inline-block";
+    } catch (err) {
+      alert("Error al iniciar cámara: " + err);
     }
+  }
 
-    startBtn.onclick = startCamera;
-    stopBtn.onclick = stopCamera;
-    window.onload = loadCameras;
-  </script>
+  async function stopCamera() {
+    if (!html5QrCode) return;
+    try {
+      await html5QrCode.stop();
+    } catch {}
+    html5QrCode.clear();
+    html5QrCode = null;
+    startBtn.style.display = "inline-block";
+    stopBtn.style.display = "none";
+    lastInfo.textContent = "Cámara detenida";
+  }
+
+  startBtn.onclick = startCamera;
+  stopBtn.onclick = stopCamera;
+  window.onload = loadCameras;
+</script>
 </body>
 </html>
