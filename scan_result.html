@@ -7,7 +7,10 @@
 
   <style>
     body { font-family: Inter, Arial, sans-serif; background:#f3f6fb; margin:0; padding:18px; }
-    .wrap { max-width:900px; margin:0 auto; }
+
+    /* Ocultamos la app hasta que el server esté listo */
+    .wrap { max-width:900px; margin:0 auto; display:none; }
+
     header { text-align:center; }
     .card { background:#fff; border-radius:10px; padding:16px; box-shadow:0 8px 24px rgba(20,30,60,0.06); }
 
@@ -19,6 +22,7 @@
       font-weight:600; cursor:pointer;
     }
     button { background:#2563eb; color:white; }
+    button:disabled { background:#9ca3af; cursor:not-allowed; }
     button.ghost { background:#eef2ff; color:#111; }
     select { background:#fff; color:#111; font-weight:500; }
 
@@ -41,7 +45,7 @@
     }
     .popup-content {
       background:white; padding:24px; border-radius:12px;
-      max-width:300px; text-align:center;
+      max-width:320px; text-align:center;
       box-shadow:0 8px 24px rgba(0,0,0,0.2);
     }
     .popup-content.success { border:3px solid #16a34a; }
@@ -58,11 +62,49 @@
       66% { content:'..'; }
       100%{ content:'...'; }
     }
+
+    /* Overlay de servidor despertando */
+    .server-overlay {
+      position:fixed;
+      inset:0;
+      background:#0b1120;
+      color:white;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      z-index:1000;
+      text-align:center;
+      padding:16px;
+    }
+
+    .spinner {
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      border:3px solid rgba(255,255,255,0.2);
+      border-top-color:#38bdf8;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
+  <!-- Overlay mientras el servidor despierta -->
+  <div id="serverOverlay" class="server-overlay">
+    <div class="spinner"></div>
+    <div>
+      <div style="font-size:18px; font-weight:600;">Levantando servicio…</div>
+      <div style="font-size:14px; opacity:0.8;">Esto puede tardar unos segundos si el servidor está dormido.</div>
+    </div>
+  </div>
+
+  <div class="wrap" id="appWrapper">
     <header>
       <h1>Scanner QR — Cámara</h1>
       <p class="hint">Selecciona la cámara y escanea el código QR.</p>
@@ -71,13 +113,13 @@
     <div class="card">
       <div class="controls">
         <select id="cameraSelect"><option>Seleccionar cámara...</option></select>
-        <button id="startBtn">Iniciar</button>
+        <button id="startBtn" disabled>Iniciar</button>
         <button id="stopBtn" class="ghost" style="display:none;">Detener</button>
       </div>
 
       <div id="reader"></div>
 
-      <div class="loading" id="loading">🔄 Levantando servicio<span class="dots"></span></div>
+      <div class="loading" id="loading">🔄 Verificando servidor<span class="dots"></span></div>
 
       <div class="result">
         <div style="flex:1">
@@ -105,44 +147,69 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const cameraSelect = document.getElementById('cameraSelect');
-    const output = document.getElementById('output');
-    const lastInfo = document.getElementById('lastInfo');
-    const loading = document.getElementById('loading');
+    const BACKEND_URL = "https://qrsbingo.onrender.com";
 
-    const popup = document.getElementById('popup');
+    const appWrapper   = document.getElementById('appWrapper');
+    const serverOverlay = document.getElementById('serverOverlay');
+
+    const startBtn     = document.getElementById('startBtn');
+    const stopBtn      = document.getElementById('stopBtn');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const output       = document.getElementById('output');
+    const lastInfo     = document.getElementById('lastInfo');
+    const loading      = document.getElementById('loading');
+
+    const popup        = document.getElementById('popup');
     const popupContent = document.getElementById('popupContent');
-    const popupTitle = document.getElementById('popupTitle');
+    const popupTitle   = document.getElementById('popupTitle');
     const popupMessage = document.getElementById('popupMessage');
 
     let html5QrCode = null;
     let scanningLocked = false;
     let serviceReady = false;
 
-    // 🎵 Sonidos (reemplaza los base64 por los tuyos)
-    const successSound = new Audio("data:audio/mp3;base64,SUQzAwAAAAAA...");
-    const errorSound   = new Audio("data:audio/mp3;base64,SUQzAwAAAAAA...");
+    // Si quieres usar sonidos, descomenta y pon tus base64:
+    // const successSound = new Audio("data:audio/mp3;base64,....");
+    // const errorSound   = new Audio("data:audio/mp3;base64,....");
 
-    // 🚀 Verificar backend al cargar
-    async function checkServer() {
+    function playSound(type) {
+      // if (type === "success") successSound.play();
+      // else errorSound.play();
+    }
+
+    // 🚀 Verificar backend al cargar (reintenta hasta que responda)
+    async function checkServerOnce() {
       try {
-        const r = await fetch("https://qrsbingo.onrender.com/ping");
+        const r = await fetch(`${BACKEND_URL}/ping`, { cache: "no-store" });
         const d = await r.json();
 
         if (d.ok) {
           serviceReady = true;
-          loading.innerText = "Servidor listo ✔";
+          loading.textContent = "Servidor listo ✔";
           loading.style.color = "#16a34a";
 
-          setTimeout(() => loading.style.display = "none", 800);
+          // Mostrar app y ocultar overlay
+          appWrapper.style.display = "block";
+          serverOverlay.style.display = "none";
+
+          startBtn.disabled = false;
+          return true;
         } else {
-          loading.innerText = "❌ Servidor no disponible";
+          loading.textContent = "❌ Servidor no disponible";
+          return false;
         }
       } catch (e) {
-        loading.innerText = "❌ No se pudo conectar a /ping";
-        console.error(e);
+        console.log("Ping falló, reintentando…");
+        loading.textContent = "🔄 Esperando servidor…";
+        return false;
+      }
+    }
+
+    async function checkServerLoop() {
+      const ok = await checkServerOnce();
+      if (!ok) {
+        // Reintenta cada 2 segundos hasta que levante
+        setTimeout(checkServerLoop, 2000);
       }
     }
 
@@ -170,24 +237,44 @@
       }
 
       const cameraId = cameraSelect.value;
-      if (!cameraId) return alert("Selecciona una cámara.");
+      if (!cameraId) {
+        alert("Selecciona una cámara.");
+        return;
+      }
+
+      if (html5QrCode) {
+        // por si acaso ya había una instancia previa
+        await stopCamera();
+      }
 
       html5QrCode = new Html5Qrcode("reader");
 
       try {
         await html5QrCode.start(
           cameraId,
-          { fps: 10, qrbox: 300 },
-          decodedText => handleScan(decodedText)
+          {
+            fps: 10,
+            qrbox: 300,
+            // intentar ayudar al enfoque / calidad
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            }
+          },
+          decodedText => handleScan(decodedText),
+          errorMessage => {
+            // errores de escaneo continuos, no hacemos nada
+            // console.log("Scan error", errorMessage);
+          }
         );
         startBtn.style.display = "none";
         stopBtn.style.display = "inline-block";
+        lastInfo.textContent = "Cámara lista, esperando QR…";
       } catch (err) {
         alert("Error al iniciar cámara: " + err);
       }
     }
 
-    // 📦 Decodificar QR
+    // 📦 Decodificar la parte ?data= del QR
     function decodeQRText(decodedText) {
       try {
         const match = decodedText.match(/[?&]data=([^&]+)/);
@@ -196,7 +283,8 @@
         const base64data = decodeURIComponent(match[1]);
         const jsonStr = atob(base64data.replace(/-/g, '+').replace(/_/g, '/'));
         return { raw: decodedText, decoded: JSON.parse(jsonStr) };
-      } catch {
+      } catch (e) {
+        console.error("Error decodificando QR:", e);
         return { raw: decodedText, decoded: null };
       }
     }
@@ -221,7 +309,7 @@
     // 🌐 Llamar backend
     async function sendToBackend(data) {
       try {
-        const r = await fetch("https://qrsbingo.onrender.com/api/scan", {
+        const r = await fetch(`${BACKEND_URL}/api/scan`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
@@ -246,12 +334,8 @@
       } catch (e) {
         playSound("error");
         showPopup("⚠️ Error", "No se pudo conectar con el servidor.", "error");
+        console.error("Error backend:", e);
       }
-    }
-
-    function playSound(type) {
-      if (type === "success") successSound.play();
-      else errorSound.play();
     }
 
     function showPopup(title, msg, type) {
@@ -263,12 +347,15 @@
 
     function closePopup() {
       popup.style.display = "none";
-      scanningLocked = false;
+      scanningLocked = false; // aquí volvemos a permitir escanear otro QR
+      lastInfo.textContent = "Listo para escanear otro QR.";
     }
 
     async function stopCamera() {
       if (!html5QrCode) return;
-      await html5QrCode.stop().catch(()=>{});
+      try {
+        await html5QrCode.stop();
+      } catch (e) {}
       html5QrCode.clear();
       html5QrCode = null;
 
@@ -281,8 +368,8 @@
     stopBtn.onclick = stopCamera;
 
     window.onload = () => {
-      checkServer();
-      loadCameras();
+      checkServerLoop(); // empieza a pinguear al backend
+      loadCameras();     // prepara la lista de cámaras
     };
   </script>
 
